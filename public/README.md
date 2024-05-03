@@ -1,2 +1,0 @@
-# vandyclasses
-Vanderbilt Course Search
