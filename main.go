@@ -14,10 +14,10 @@ var redisClient *redis.Client
 func main() {
     redisClient = redis.NewClient(&redis.Options{
         Addr: "redis-16488.c284.us-east1-2.gce.redns.redis-cloud.com:16488",
-		// password goes here
+		Password: "XRrxCA9ZeH9bBsnCKYDgnqRHY4yQQifQ",
     })
 
-    // test redis connection
+	// test Redis connection
     _, err := redisClient.Ping().Result()
     if err != nil {
         panic(err)
@@ -34,7 +34,6 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
         tmpl := template.Must(template.ParseFiles("search.html"))
         tmpl.Execute(w, nil)
     } else if r.Method == "POST" {
-        // get search query from form
         query := r.FormValue("query")
 
 		// search and render
