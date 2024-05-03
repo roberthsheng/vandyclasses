@@ -5,8 +5,19 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 import time
 import redis
+import os
+from dotenv import load_dotenv
 
-# Setup Redis connection here
+# Load environment variables from .env file
+load_dotenv()
+
+# Setup Redis connection
+r = redis.Redis(
+    host=os.getenv('REDIS_ADDR'),
+    port=int(os.getenv('REDIS_PORT')),
+    db=0,
+    password=os.getenv('REDIS_PASSWORD')
+)
 
 url = "https://www.vanderbilt.edu/catalogs/kuali/undergraduate-23-24.php#/courses"
 driver = webdriver.Chrome()
@@ -43,13 +54,23 @@ for link in course_links:
             print(f"Failed to load course description for {course_name}: {str(e)}")
             course_description = "Description not available"
 
+        # Split course name by first '-', then get rid of leading/trailing whitespace
+        course_code, course_name = course_name.split('-', 1)
+        course_code = course_code.strip()
+        course_name = course_name.strip()
+        print(course_name)
+
+        # Store course details in Redis
+        course_key = f"course:{course_code}"
+        r.hset(course_key, mapping={
+            'code': course_code,
+            'name': course_name,
+            'description': course_description,
+            'link': course_link
+        })
+
         # Going back to main tab
         driver.close()
         driver.switch_to.window(driver.window_handles[0])
-
-        print(f"{course_name}: {course_description}")
-
-        # Store in Redis
-        r.set(course_name, course_description)
 
 driver.quit()

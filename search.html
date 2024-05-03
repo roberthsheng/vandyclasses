@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Redis Search</title>
+    <title>Vandy Class Search</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -44,11 +44,53 @@
 </head>
 <body>
     <div class="container">
-        <h1>Redis Search</h1>
-        <form method="POST">
-            <input type="text" name="query" placeholder="Enter search query">
-            <button type="submit">Search</button>
-        </form>
+        <h1>Vandy Class Search</h1>
+        <input type="text" id="searchInput" placeholder="Enter search query">
+        <div id="results"></div>
     </div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const resultsContainer = document.getElementById('results');
+
+        let debounceTimer;
+        const debounceDelay = 1;
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const query = this.value.trim();
+                if (query === '') {
+                    resultsContainer.innerHTML = '';
+                    return;
+                }
+
+                fetch('/search?query=' + encodeURIComponent(query))
+                    .then(response => response.json())
+                    .then(data => {
+                        resultsContainer.innerHTML = renderResults(data);
+                    });
+            }, debounceDelay);
+        });
+
+        function renderResults(data) {
+            if (data.length === 0) {
+                return '<p>No matches found.</p>';
+            }
+
+            let html = '<ul>';
+            data.forEach(item => {
+                html += `
+                    <li>
+                        <div class="key">Course: ${item.key}</div>
+                        <div class="value">Description: ${item.value}</div>
+                    </li>
+                `;
+            });
+            html += '</ul>';
+
+            return html;
+        }
+    </script>
 </body>
 </html>

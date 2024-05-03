@@ -49,22 +49,41 @@
 </head>
 <body>
     <div class="container">
-        <div class="new-search">
-            <a href="/">New Search</a>
-        </div>
         <h1>Search Results</h1>
-        {{if .}}
-            <ul>
-            {{range .}}
-                <li>
-                    <div class="key">Key: {{.key}}</div>
-                    <div class="value">Value: {{.value}}</div>
-                </li>
-            {{end}}
-            </ul>
-        {{else}}
-            <p>No matches found.</p>
-        {{end}}
+        <input type="text" id="searchInput" placeholder="Enter search query">
+        <ul id="resultsList"></ul>
     </div>
+
+    <script>
+        document.getElementById('searchInput').addEventListener('keyup', function() {
+            const query = this.value.trim();
+            const resultsList = document.getElementById('resultsList');
+            
+            // Clear results if the query is empty
+            if (query.length === 0) {
+                resultsList.innerHTML = '<p>Type to search for courses.</p>';
+                return;
+            }
+    
+            fetch(`/search?query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    resultsList.innerHTML = ''; // Clear previous results
+                    if (data.length === 0) {
+                        resultsList.innerHTML = '<p>No matches found.</p>';
+                        return;
+                    }
+                    data.forEach(item => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<div class="key">Course: ${item.key}</div><div class="value">Description: ${item.value}</div>`;
+                        resultsList.appendChild(li);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching data: ', error);
+                    resultsList.innerHTML = '<p>Error loading results.</p>';
+                });
+        });
+    </script>    
 </body>
 </html>
