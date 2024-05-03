@@ -69,13 +69,13 @@ func searchRedis(query string) []map[string]string {
 
     // Properly format the query for wildcard searching without quotes around the wildcard part
     escapedQuery := strings.ReplaceAll(query, `"`, `\"`)
-    formattedQuery := fmt.Sprintf("@name:%s* | @description:%s*", escapedQuery, escapedQuery)
+    formattedQuery := fmt.Sprintf("@code:*%s* | @description:*%s* | @name:*%s*", escapedQuery, escapedQuery, escapedQuery)
 
     // Debugging: Print the formatted query to see what's being sent to Redis
     fmt.Printf("Formatted query: %s\n", formattedQuery)
 
     // Execute the search command using RediSearch
-    results, err := redisClient.Do("FT.SEARCH", "idxCourses", formattedQuery, "LIMIT", 0, 10).Result()
+    results, err := redisClient.Do("FT.SEARCH", "idxCourses", formattedQuery, "LIMIT", 0, 300).Result()
     if err != nil {
         fmt.Printf("Search error: %v\n", err)
         return matches
@@ -114,8 +114,8 @@ func searchRedis(query string) []map[string]string {
         name, ok2 := courseMap["name"]
         description, ok3 := courseMap["description"]
         if ok1 && ok2 && ok3 {
-            key := fmt.Sprintf("course:%s", code)
-            value := fmt.Sprintf("%s: %s", name, description)
+            key := fmt.Sprintf("%s - %s", code, name)
+            value := fmt.Sprintf("%s: ", description)
             matches = append(matches, map[string]string{"key": key, "value": value})
         } else {
             fmt.Println("Error retrieving course data fields.")
