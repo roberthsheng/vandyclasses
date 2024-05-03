@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Results</title>
+</head>
+<body>
+    <h1>Search Results</h1>
+    {{if .}}
+        <ul>
+        {{range .}}
+            <li>Key: {{.key}}, Value: {{.value}}</li>
+        {{end}}
+        </ul>
+    {{else}}
+        <p>No matches found.</p>
+    {{end}}
+    <a href="/">New Search</a>
+</body>
+</html>
