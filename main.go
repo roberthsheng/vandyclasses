@@ -6,9 +6,10 @@ import (
     "net/http"
 	"strings"
 	"encoding/json"
-    "github.com/go-redis/redis"
 	"os"
-    "github.com/joho/godotenv"
+	"time"
+    "github.com/go-redis/redis"
+	"github.com/joho/godotenv"
 )
 
 var redisClient *redis.Client
@@ -46,15 +47,17 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+	startTime := time.Now()
     matches := searchRedis(query)
-	if len(matches) == 0 { // Check if no matches were found and handle accordingly
-        jsonResponse, _ := json.Marshal([]map[string]string{})
-        w.Header().Set("Content-Type", "application/json")
-        w.Write(jsonResponse)
-        return
+    elapsedTime := time.Since(startTime).Seconds()
+
+    response := map[string]interface{}{
+        "count":   len(matches),
+        "time":    fmt.Sprintf("%.2f", elapsedTime),
+        "matches": matches,
     }
-	
-    jsonResponse, err := json.Marshal(matches)
+
+    jsonResponse, err := json.Marshal(response)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
@@ -69,31 +72,42 @@ func searchRedis(query string) []map[string]string {
 
     // Properly format the query for wildcard searching without quotes around the wildcard part
     escapedQuery := strings.ReplaceAll(query, `"`, `\"`)
-    formattedQuery := fmt.Sprintf("@code:*%s* | @description:*%s* | @name:*%s*", escapedQuery, escapedQuery, escapedQuery)
 
-    // Debugging: Print the formatted query to see what's being sent to Redis
-    fmt.Printf("Formatted query: %s\n", formattedQuery)
+    // Exact match query
+    exactQuery := fmt.Sprintf("(@code:%s* => {$weight: 10.0})", escapedQuery)
+    
+    // Partial match query
+    partialQuery := fmt.Sprintf("(@code:*%s* => {$weight: 5.0}) | (@description:*%s* => {$weight: 2.0}) | (@name:*%s* => {$weight: 1.0})", escapedQuery, escapedQuery, escapedQuery)
 
-    // Execute the search command using RediSearch
-    results, err := redisClient.Do("FT.SEARCH", "idxCourses", formattedQuery, "LIMIT", 0, 300).Result()
+    // Execute the exact match search command using RediSearch
+    exactResults, err := redisClient.Do("FT.SEARCH", "idxCourses", exactQuery, "LIMIT", 0, 3000).Result()
     if err != nil {
-        fmt.Printf("Search error: %v\n", err)
-        return matches
+        fmt.Printf("Exact match search error: %v\n", err)
+    } else {
+        matches = processResults(exactResults)
     }
 
-    // Debugging: Print raw results to understand what Redis is returning
-    // fmt.Printf("Raw results: %#v\n", results)
+    // Execute the partial match search command using RediSearch
+    partialResults, err := redisClient.Do("FT.SEARCH", "idxCourses", partialQuery, "LIMIT", 0, 3000).Result()
+    if err != nil {
+        fmt.Printf("Partial match search error: %v\n", err)
+    } else {
+        partialMatches := processResults(partialResults)
+        matches = append(matches, partialMatches...)
+    }
 
-    // Process the results
+    return matches
+}
+
+func processResults(results interface{}) []map[string]string {
+    var matches []map[string]string
+
     resultSlice, ok := results.([]interface{})
-    if !ok || len(resultSlice) < 2 { // The first element is the count of the results
-        fmt.Println("No results found or parsing error.")
+    if !ok || len(resultSlice) < 2 {
         return matches
     }
 
-    // Iterate over the results, skipping the first element (the count)
     for i := 1; i < len(resultSlice); i += 2 {
-        // courseKey, _ := resultSlice[i].(string) // The course key
         courseFields, ok := resultSlice[i+1].([]interface{})
         if !ok {
             fmt.Println("Error casting course fields to interface.")
@@ -109,7 +123,6 @@ func searchRedis(query string) []map[string]string {
             }
         }
 
-        // Check if the necessary fields are present
         code, ok1 := courseMap["code"]
         name, ok2 := courseMap["name"]
         description, ok3 := courseMap["description"]

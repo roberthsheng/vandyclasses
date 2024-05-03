@@ -40,19 +40,26 @@
             cursor: pointer;
             width: 100%;
         }
+        .result-info {
+            background-color: #ffd700;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Vandy Class Search</h1>
         <input type="text" id="searchInput" placeholder="Enter search query">
+        <div id="resultInfo" class="result-info"></div>
         <div id="results"></div>
     </div>
-
     <script>
         const searchInput = document.getElementById('searchInput');
         const resultsContainer = document.getElementById('results');
-
+        const resultInfo = document.getElementById('resultInfo');
         let debounceTimer;
         const debounceDelay = 1;
 
@@ -62,24 +69,25 @@
                 const query = this.value.trim();
                 if (query === '') {
                     resultsContainer.innerHTML = '';
+                    resultInfo.style.display = 'none';
                     return;
                 }
-
                 fetch('/search?query=' + encodeURIComponent(query))
                     .then(response => response.json())
                     .then(data => {
-                        resultsContainer.innerHTML = renderResults(data);
+                        resultsContainer.innerHTML = renderResults(data.matches);
+                        resultInfo.innerHTML = `<p>${data.count} results found in ${data.time} seconds.</p>`;
+                        resultInfo.style.display = 'block';
                     });
             }, debounceDelay);
         });
 
-        function renderResults(data) {
-            if (data.length === 0) {
+        function renderResults(matches) {
+            if (matches.length === 0) {
                 return '<p>No matches found.</p>';
             }
-
             let html = '<ul>';
-            data.forEach(item => {
+            matches.forEach(item => {
                 html += `
                     <li>
                         <div class="key">Course: ${item.key}</div>
@@ -88,7 +96,6 @@
                 `;
             });
             html += '</ul>';
-
             return html;
         }
     </script>
