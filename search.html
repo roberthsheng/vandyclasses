@@ -1,62 +1,88 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Vandy Class Search</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #f5f5f5;
-        }
-        .container {
-            max-width: 500px;
-            width: 100%;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-        input[type="text"] {
-            padding: 10px;
-            width: 100%;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            width: 100%;
-        }
-        .result-info {
-            background-color: #ffd700;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            display: none;
-        }
-    </style>
+  <title>Vandy Class Search</title>
+  <style>
+    body {
+      font-family: Helvetica, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #fff;
+    }
+    .container {
+      max-width: 800px;
+      width: 100%;
+      padding: 20px;
+      background-color: #fff;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    .search-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .search-container input[type="text"] {
+      padding: 5px;
+      width: 200px;
+      font-size: 14px;
+      border: none;
+      border-bottom: 2px solid #f0e68c;
+      background-color: #fff;
+      outline: none;
+    }
+    .search-container span {
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+    }
+    .result-info {
+      border: 2px solid #f0e68c;
+      background-color: #fffacd;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: none;
+      font-size: 13px;
+    }
+    .key {
+      font-weight: bold;
+    }
+    .value {
+      font-size: 13px;
+    }
+    .result-item {
+      margin-bottom: 10px;
+    }
+    .time {
+      color: #888;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Vandy Class Search</h1>
-        <input type="text" id="searchInput" placeholder="Enter search query">
-        <div id="resultInfo" class="result-info"></div>
-        <div id="results"></div>
+  <div class="container">
+    <h1>Vandy Class Search</h1>
+    <div class="search-container">
+      <span>I want to learn about&nbsp;</span>
+      <input type="text" id="searchInput" placeholder="">
+      <span>,&nbsp;but YES is slow and unhelpful. What should I take?</span>
     </div>
-    <script>
+    <div id="resultInfo" class="result-info"></div>
+    <div id="results"></div>
+  </div>
+  <script>
         const searchInput = document.getElementById('searchInput');
         const resultsContainer = document.getElementById('results');
         const resultInfo = document.getElementById('resultInfo');
@@ -76,7 +102,7 @@
                     .then(response => response.json())
                     .then(data => {
                         resultsContainer.innerHTML = renderResults(data.matches);
-                        resultInfo.innerHTML = `<p>${data.count} results found in ${data.time} seconds.</p>`;
+                        resultInfo.innerHTML = `<p>Found ${data.count} results <span class="time">(${data.time} s)</span></p>`;
                         resultInfo.style.display = 'block';
                     });
             }, debounceDelay);
@@ -86,16 +112,15 @@
             if (matches.length === 0) {
                 return '<p>No matches found.</p>';
             }
-            let html = '<ul>';
+            let html = '';
             matches.forEach(item => {
                 html += `
-                    <li>
-                        <div class="key">Course: ${item.key}</div>
-                        <div class="value">Description: ${item.value}</div>
-                    </li>
+                    <div class="result-item">
+                        <div class="key">${item.key}</div>
+                        <div class="value">${item.value}</div>
+                    </div>
                 `;
             });
-            html += '</ul>';
             return html;
         }
     </script>

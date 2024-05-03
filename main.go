@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"os"
 	"time"
+	"sort"
     "github.com/go-redis/redis"
 	"github.com/joho/godotenv"
 )
@@ -70,16 +71,11 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 func searchRedis(query string) []map[string]string {
     var matches []map[string]string
 
-    // Properly format the query for wildcard searching without quotes around the wildcard part
     escapedQuery := strings.ReplaceAll(query, `"`, `\"`)
 
-    // Exact match query
     exactQuery := fmt.Sprintf("(@code:%s* => {$weight: 10.0})", escapedQuery)
-    
-    // Partial match query
     partialQuery := fmt.Sprintf("(@code:*%s* => {$weight: 5.0}) | (@description:*%s* => {$weight: 2.0}) | (@name:*%s* => {$weight: 1.0})", escapedQuery, escapedQuery, escapedQuery)
 
-    // Execute the exact match search command using RediSearch
     exactResults, err := redisClient.Do("FT.SEARCH", "idxCourses", exactQuery, "LIMIT", 0, 3000).Result()
     if err != nil {
         fmt.Printf("Exact match search error: %v\n", err)
@@ -87,7 +83,6 @@ func searchRedis(query string) []map[string]string {
         matches = processResults(exactResults)
     }
 
-    // Execute the partial match search command using RediSearch
     partialResults, err := redisClient.Do("FT.SEARCH", "idxCourses", partialQuery, "LIMIT", 0, 3000).Result()
     if err != nil {
         fmt.Printf("Partial match search error: %v\n", err)
@@ -134,6 +129,11 @@ func processResults(results interface{}) []map[string]string {
             fmt.Println("Error retrieving course data fields.")
         }
     }
+
+	// sort matches alphabetically by "key"
+    sort.Slice(matches, func(i, j int) bool {
+        return matches[i]["key"] < matches[j]["key"]
+    })
 
     return matches
 }
