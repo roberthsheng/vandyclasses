@@ -1,5 +1,7 @@
 # vandyclasses
 
+[Site](https://vuclasses.com/)
+
 _I want to learn about **\[X\]**, but YES is slow and unhelpful. What should I take?_
 
 I got annoyed at how slow YES is, how limited their search results were, and the fact that you couldn't search by course description. So I made this. This project was largely inspired by [classes.wtf](https://classes.wtf/), a similar and much better project done for Harvard.
